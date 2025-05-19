@@ -1,0 +1,21 @@
+:root {
+  --olive-50: #f5f4f0;
+  --olive-100: #e9e7de;
+  --olive-200: #d6d3c0;
+  --olive-300: ##bcb79a;
+  --olive-400: #a39e78;
+  --olive-500: #87835b;
+  --olive-600: #6a6746;
+  --olive-700: #535238;
+  --olive-800: #444330;
+  --olive-900: #3b3b2c;
+  --olive-950: #2e2e1f;
+}
+body {
+  margin: 0px;
+  padding: 0px;
+}
+html {
+  padding: 0;
+  margin: 0;
+}
