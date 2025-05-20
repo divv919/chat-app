@@ -8,24 +8,36 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const wss = new ws_1.WebSocketServer({ port: 8080 });
 const app = (0, express_1.default)();
-const clients = [];
-const rooms = [];
+const clients = new Map();
+const usernames = new Map();
+const sendToAllRoomUsers = (roomId, message) => {
+    const usersOfTheRoom = clients.get(roomId) || [];
+    for (const user of usersOfTheRoom) {
+        user.send(message);
+    }
+};
 app.use((0, cors_1.default)());
 wss.on("connection", (socket, request) => {
-    var _a;
     socket.on("error", () => console.log("Error connecting"));
-    clients.push({
-        socketVal: socket,
-        roomId: Number((_a = request.url) === null || _a === void 0 ? void 0 : _a.replace("/", "")),
-    });
-    console.log("clients : ", clients);
-    socket.send("Connected");
+    // console.log("clients : ", clients);
     socket.on("message", (e) => {
-        for (const client of clients) {
-            if (client.socketVal.readyState === ws_1.WebSocket.OPEN &&
-                client.roomId === Number(e.toString().split(":")[2])) {
-                client.socketVal.send(`by user ${e.toString().split(":")[0]} : ${e.toString().split(":")[1]}`);
+        var _a;
+        const parsedData = JSON.parse(e.toString());
+        if (parsedData.type === "message") {
+            sendToAllRoomUsers(parsedData.roomId, e.toString());
+        }
+        else if (parsedData.type === "join") {
+            usernames.set(socket, parsedData.user);
+            if (clients.has(parsedData.roomId)) {
+                (_a = clients.get(parsedData.roomId)) === null || _a === void 0 ? void 0 : _a.push(socket);
             }
+            else {
+                clients.set(parsedData.payload.roomId, [socket]);
+            }
+            sendToAllRoomUsers(parsedData.roomId, JSON.stringify({
+                type: "announcement",
+                payload: { message: `${parsedData.user} has joined this room` },
+            }));
         }
     });
     socket.on("close", () => console.log("Connection closed"));
@@ -34,9 +46,8 @@ console.log("Websocket server running ");
 app.get("/getRandomRoomId", (req, res) => {
     while (1) {
         const roomId = Math.floor(Math.random() * 9999);
-        if (!rooms.includes(roomId)) {
-            rooms.push(roomId);
-            console.log("Rooms : ", rooms);
+        if (!clients.has(roomId)) {
+            clients.set(roomId, []);
             res.json({ roomId });
             return;
         }
@@ -45,10 +56,7 @@ app.get("/getRandomRoomId", (req, res) => {
 });
 app.get("/checkValidRoomId", (req, res) => {
     const { id } = req.query;
-    console.log(id);
-    console.log("Room includes the id :", rooms.includes(Number(id)));
-    console.log("Rooms : ", rooms);
-    if (rooms.includes(Number(id))) {
+    if (clients.has(Number(id))) {
         res.status(200).json({ isValid: true });
         return;
     }

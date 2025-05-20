@@ -9,3 +9,8 @@
   gap: 16px;
   background-color: var(--olive-900);
 }
+.messages-container {
+  height: 500px;
+  /* background-color: red; */
+  overflow-y: scroll;
+}
